@@ -4,7 +4,7 @@
   "description": "Generates jest mocks based on module usage",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test"
+    "test": "jest"
   },
   "repository": {
     "type": "git",

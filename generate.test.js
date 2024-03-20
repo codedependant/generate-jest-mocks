@@ -16,7 +16,9 @@ describe('generate', () => {
   });
 
   it('handles parse error', () => {
-    expect(() => generate(`const cache; = require('cache');`)).toThrow('Error parsing file: Missing initializer in const declaration. (1:11)');
+    expect(() => generate(`const cache; = require('cache');`)).toThrow(
+      'Error parsing file: Missing initializer in const declaration. (1:11)'
+    );
   });
 
   it('handles spread properties', () => {
@@ -120,5 +122,21 @@ describe('generate', () => {
     `);
 
     expect(result).toBe(f(`jest.mock('cache', () => ({set: jest.fn()}));`));
+  });
+
+  it('handles require without assignment', () => {
+    const result = generate(`
+      require('cache');
+    `);
+
+    expect(result).toBe('');
+  });
+
+  it('handles import without assignment', () => {
+    const result = generate(`
+      import 'cache';
+    `);
+
+    expect(result).toBe('');
   });
 });

@@ -5,7 +5,7 @@ const fs = require('fs');
 const _merge = require('lodash.merge');
 const _set = require('lodash.set');
 
-function addReference(input, alias) {
+function getReference(input, alias) {
   const pushLevel = (i, memo = []) => {
     if (i.type === 'Identifier') return [...memo, alias || i.name];
     return pushLevel(i.object, [...memo, i.property.name]);
@@ -18,36 +18,36 @@ function addReference(input, alias) {
   return null;
 }
 
-function getReferences({ properties, path, modulePath, modules }) {
-  properties.forEach((property) => {
-    const moduleName = property.name;
-    const references = path.scope.bindings[moduleName]?.referencePaths || [];
-    references.map((reference) => {
-      const callExpressionPath = reference.findParent(
-        (node) => node.type === 'CallExpression'
-      );
-      if (!callExpressionPath) return;
+function getReferences({ properties, path, modulePath }) {
+  return properties
+    .map((property) => {
+      const moduleName = property.name;
+      const references = path.scope.bindings[moduleName]?.referencePaths || [];
 
-      const referenceObject = addReference(
-        callExpressionPath.node.callee,
-        property.alias
-      );
+      return references.map((reference) => {
+        const callExpressionPath = reference.findParent(
+          (node) => node.type === 'CallExpression'
+        );
+        if (!callExpressionPath) return;
 
-      if (property.root) {
-        _merge(modules, referenceObject);
-        return;
-      }
+        const referenceObject = getReference(
+          callExpressionPath.node.callee,
+          property.alias
+        );
 
-      _merge(modules, { [modulePath]: referenceObject });
-    });
-  });
+        return property.isRoot
+          ? referenceObject
+          : { [modulePath]: referenceObject };
+      });
+    })
+    .flat();
 }
 
-function build(value) {
+function buildMock(value) {
   if (!value) return 'jest.fn()';
 
   return `{${Object.entries(value)
-    .map(([key, value]) => `${key}:${build(value)}`)
+    .map(([key, value]) => `${key}:${buildMock(value)}`)
     .join(',')}}`;
 }
 
@@ -65,56 +65,71 @@ function safeParse(file) {
 function main(file) {
   if (!file) throw new Error('file is required');
 
-  const modules = {};
-
   const ast = safeParse(file);
+
+  let importReferences;
+  let requireReferences;
 
   traverse(ast, {
     ImportDeclaration(path) {
       const modulePath = path.node.source.value;
       const properties = path.node.specifiers.map((specifier) => {
-        if (specifier.type === 'ImportDefaultSpecifier') {
-          return { name: specifier.local.name, alias: 'default', root: false };
-        }
         return {
-          name: specifier.imported.name,
-          root: false,
+          name:
+            specifier.type === 'ImportDefaultSpecifier'
+              ? specifier.local.name
+              : specifier.imported.name,
+          isRoot: false,
           alias:
             specifier.type === 'ImportDefaultSpecifier' ? 'default' : undefined,
         };
       });
-      getReferences({
+
+      importReferences = getReferences({
         properties,
         path,
         modulePath,
-        modules,
       });
     },
     Identifier(path) {
       if (path.node.name !== 'require') return;
-      const parentPath = path.findParent(
+
+      const variableDeclaratorPath = path.findParent(
         (node) => node.type === 'VariableDeclarator'
       );
-      const modulePath = parentPath.node.init.arguments[0].value;
-      const properties = parentPath.node.id.properties?.map((property) => {
-        return {
-          name: property.key.name,
-          root: false,
-        };
-      }) || [{ root: true, name: parentPath.node.id.name }];
 
-      getReferences({
+      if (!variableDeclaratorPath) return;
+
+      const modulePath = variableDeclaratorPath.node.init.arguments[0].value;
+      const properties = variableDeclaratorPath.node.id.properties?.map(
+        (property) => {
+          return {
+            name: property.key.name,
+            isRoot: false,
+          };
+        }
+      ) || [{ isRoot: true, name: variableDeclaratorPath.node.id.name }];
+
+      requireReferences = getReferences({
         properties,
         path,
         modulePath,
-        modules,
       });
     },
   });
 
+  const references = [
+    ...(importReferences || []),
+    ...(requireReferences || []),
+  ];
+
+  const modules = references.reduce((acc, reference) => {
+    return _merge(acc, reference);
+  }, {});
+
   const output = Object.entries(modules)
     .map(([key, value]) => {
-      return `jest.mock('${key}', () => (${build(value)}));`;
+      return `jest.mock('${key}', () => (${buildMock(value)}));`;
     })
     .join('\n');
 
