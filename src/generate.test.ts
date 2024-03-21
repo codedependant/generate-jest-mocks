@@ -1,6 +1,6 @@
-const generate = require('./generate');
-const { parse } = require('@babel/parser');
-const babelGenerate = require('@babel/generator').default;
+import generate from './generate';
+import {parse} from '@babel/parser';
+import babelGenerate from '@babel/generator';
 
 const f = (string) =>
   babelGenerate(parse(string, { sourceType: 'module' })).code;
