@@ -7,15 +7,27 @@ import {
   ImportDefaultSpecifier,
   ImportNamespaceSpecifier,
   ImportSpecifier,
+  Identifier,
+  MemberExpression,
+  Expression,
+  V8IntrinsicIdentifier,
+  ImportDeclaration,
 } from '@babel/types';
 
-function getReference(input: babel.types.CallExpression, alias?: string) {
-  const pushLevel = (node, memo: string[] = []) => {
+function getReference(
+  input: Expression | MemberExpression | Identifier | V8IntrinsicIdentifier,
+  alias?: string
+) {
+  const pushLevel = (
+    node: Expression | MemberExpression | Identifier | V8IntrinsicIdentifier,
+    memo: string[] = []
+  ) => {
     if (node.type === 'Identifier') return [...memo, alias || node.name];
-    return pushLevel(node.object, [...memo, node.property.name]);
+    if (node.type === 'MemberExpression' && node.property.type === 'Identifier')
+      return pushLevel(node.object, [...memo, node.property.name]);
   };
 
-  const levels = pushLevel(input).reverse();
+  const levels = pushLevel(input)?.reverse() || [];
 
   if (levels.length) return _set({}, levels, null);
 
@@ -34,9 +46,7 @@ function getReferences({
   modulePath,
 }: {
   properties: Property[];
-  path:
-    | NodePath<babel.types.ImportDeclaration>
-    | NodePath<babel.types.Identifier>;
+  path: NodePath<ImportDeclaration> | NodePath<Identifier>;
   modulePath: string;
 }) {
   return properties
@@ -50,12 +60,14 @@ function getReferences({
         ) as NodePath<babel.types.CallExpression> | null;
 
         if (!callExpressionPath) return;
-        if (callExpressionPath.node.callee.type !== 'CallExpression') return;
+
+        // if (callExpressionPath.node.callee.type !== 'CallExpression') return;
 
         const referenceObject = getReference(
           callExpressionPath.node.callee,
           property.alias
         );
+        console.log('file: generate.ts : line 71', referenceObject);
 
         return property.isRoot
           ? referenceObject
@@ -89,8 +101,7 @@ function main(file) {
 
   const ast = safeParse(file);
 
-  let importReferences;
-  let requireReferences;
+  const references = [];
 
   function getName(
     specifier:
@@ -126,12 +137,15 @@ function main(file) {
           };
         })
         .filter(Boolean) as Property[];
+      console.log('ImportDeclaration : properties:', properties);
 
-      importReferences = getReferences({
-        properties,
-        path,
-        modulePath,
-      });
+      references.push(
+        ...getReferences({
+          properties,
+          path,
+          modulePath,
+        })
+      );
     },
     Identifier(path) {
       if (path.node.name !== 'require') return;
@@ -159,9 +173,9 @@ function main(file) {
             if (
               property.type !== 'ObjectProperty' ||
               property.key.type !== 'Identifier'
-            ) {
+            )
               return;
-            }
+
             return {
               name: property.key.name,
               isRoot: false,
@@ -174,18 +188,15 @@ function main(file) {
           { isRoot: true, name: variableDeclaratorPath.node.id.name },
         ];
 
-      requireReferences = getReferences({
-        properties,
-        path,
-        modulePath,
-      });
+      references.push(
+        ...getReferences({
+          properties,
+          path,
+          modulePath,
+        })
+      );
     },
   });
-
-  const references = [
-    ...(importReferences || []),
-    ...(requireReferences || []),
-  ];
 
   const modules = references.reduce((acc, reference) => {
     return _merge(acc, reference);

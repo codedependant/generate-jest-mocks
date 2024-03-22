@@ -1,5 +1,5 @@
 import generate from './generate';
-import {parse} from '@babel/parser';
+import { parse } from '@babel/parser';
 import babelGenerate from '@babel/generator';
 
 const f = (string) =>
