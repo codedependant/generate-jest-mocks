@@ -61,13 +61,10 @@ function getReferences({
 
         if (!callExpressionPath) return;
 
-        // if (callExpressionPath.node.callee.type !== 'CallExpression') return;
-
         const referenceObject = getReference(
           callExpressionPath.node.callee,
           property.alias
         );
-        console.log('file: generate.ts : line 71', referenceObject);
 
         return property.isRoot
           ? referenceObject
@@ -96,35 +93,36 @@ function safeParse(file) {
   }
 }
 
-function main(file) {
+function getSpecifierName(
+  specifier: ImportDefaultSpecifier | ImportNamespaceSpecifier | ImportSpecifier
+) {
+  if (specifier.type === 'ImportDefaultSpecifier') return specifier.local.name;
+  if (specifier.type === 'ImportSpecifier') {
+    if (specifier.imported.type === 'Identifier')
+      return specifier.imported.name;
+    if (specifier.imported.type === 'StringLiteral')
+      return specifier.imported.value;
+  }
+}
+
+function main(file, { exclude = [] }: { exclude: string[] }) {
+  console.log('main : exclude:', exclude);
   if (!file) throw new Error('file is required');
 
   const ast = safeParse(file);
 
   const references = [];
 
-  function getName(
-    specifier:
-      | ImportDefaultSpecifier
-      | ImportNamespaceSpecifier
-      | ImportSpecifier
-  ) {
-    if (specifier.type === 'ImportDefaultSpecifier')
-      return specifier.local.name;
-    if (specifier.type === 'ImportSpecifier') {
-      if (specifier.imported.type === 'Identifier')
-        return specifier.imported.name;
-      if (specifier.imported.type === 'StringLiteral')
-        return specifier.imported.value;
-    }
-  }
-
   traverse(ast, {
     ImportDeclaration(path) {
       const modulePath = path.node.source.value;
+
+      console.log('file: generate.ts : line 120', exclude);
+      if (exclude.includes(modulePath)) return;
+
       const properties = path.node.specifiers
         .map((specifier) => {
-          const name = getName(specifier);
+          const name = getSpecifierName(specifier);
           if (!name) return;
 
           return {
@@ -137,7 +135,6 @@ function main(file) {
           };
         })
         .filter(Boolean) as Property[];
-      console.log('ImportDeclaration : properties:', properties);
 
       references.push(
         ...getReferences({
@@ -164,6 +161,8 @@ function main(file) {
         return;
 
       const modulePath = variableDeclaratorPath.node.init?.arguments[0].value;
+
+      if (exclude.includes(modulePath)) return;
 
       let properties;
 

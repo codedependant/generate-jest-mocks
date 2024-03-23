@@ -1,12 +1,21 @@
 import generate from './generate';
 import { readFileSync } from 'fs';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 function main() {
-  const file = process.argv[2]
-    ? readFileSync(process.argv[2], 'utf-8')
-    : undefined;
+  const argv = yargs(hideBin(process.argv))
+    .option('exclude', {
+      alias: 'e',
+      type: 'string',
+      description: 'List of modules to exclude',
+    })
+    .parseSync();
 
-  const output = generate(file);
+  console.log('main : argv:', argv.e);
+  const file = argv._[0] ? readFileSync(argv._[0], 'utf-8') : undefined;
+
+  const output = generate(file, { exclude: [argv.e].flat() as string[] });
   console.log('main : output:', output);
 }
 
