@@ -16,19 +16,23 @@ import {
 
 function getReference(
   input: Expression | MemberExpression | Identifier | V8IntrinsicIdentifier,
-  alias?: string
+  alias?: string,
+  isRoot: boolean = false
 ) {
   const pushLevel = (
     node: Expression | MemberExpression | Identifier | V8IntrinsicIdentifier,
     memo: string[] = []
   ) => {
-    if (node.type === 'Identifier') return [...memo, alias || node.name];
+    if (node.type === 'Identifier' && !isRoot)
+      return [...memo, alias || node.name];
+
     if (node.type === 'MemberExpression' && node.property.type === 'Identifier')
       return pushLevel(node.object, [...memo, node.property.name]);
+
+    return memo;
   };
 
   const levels = pushLevel(input)?.reverse() || [];
-
   if (levels.length) return _set({}, levels, null);
 
   return null;
@@ -58,17 +62,14 @@ function getReferences({
         const callExpressionPath = reference.findParent(
           (node) => node.type === 'CallExpression'
         ) as NodePath<babel.types.CallExpression> | null;
-
         if (!callExpressionPath) return;
-
         const referenceObject = getReference(
           callExpressionPath.node.callee,
-          property.alias
+          property.alias,
+          property.isRoot
         );
 
-        return property.isRoot
-          ? referenceObject
-          : { [modulePath]: referenceObject };
+        return { [modulePath]: referenceObject };
       });
     })
     .flat();
@@ -105,8 +106,13 @@ function getSpecifierName(
   }
 }
 
-function main(file, { exclude = [] }: { exclude: string[] }) {
-  console.log('main : exclude:', exclude);
+function main(
+  file,
+  {
+    exclude = [],
+    include = [],
+  }: { exclude?: string[]; include?: string[] } = {}
+) {
   if (!file) throw new Error('file is required');
 
   const ast = safeParse(file);
@@ -116,9 +122,8 @@ function main(file, { exclude = [] }: { exclude: string[] }) {
   traverse(ast, {
     ImportDeclaration(path) {
       const modulePath = path.node.source.value;
-
-      console.log('file: generate.ts : line 120', exclude);
       if (exclude.includes(modulePath)) return;
+      if (include.length && !include.includes(modulePath)) return;
 
       const properties = path.node.specifiers
         .map((specifier) => {
@@ -163,6 +168,7 @@ function main(file, { exclude = [] }: { exclude: string[] }) {
       const modulePath = variableDeclaratorPath.node.init?.arguments[0].value;
 
       if (exclude.includes(modulePath)) return;
+      if (include.length && !include.includes(modulePath)) return;
 
       let properties;
 
@@ -196,7 +202,6 @@ function main(file, { exclude = [] }: { exclude: string[] }) {
       );
     },
   });
-
   const modules = references.reduce((acc, reference) => {
     return _merge(acc, reference);
   }, {});

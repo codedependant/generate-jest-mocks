@@ -139,4 +139,59 @@ describe('generate', () => {
 
     expect(result).toBe('');
   });
+
+  it('handles subdirectories', () => {
+    const result = generate(`
+      const cache = require('libs/cache');
+      cache.set('foo', 'bar');
+    `);
+
+    expect(result).toBe(
+      f(`jest.mock('libs/cache', () => ({set: jest.fn()}));`)
+    );
+  });
+
+  it('handles exclude option', () => {
+    const result = generate(
+      `
+      const db = require('db');
+      const cache = require('cache');
+      cache.set('foo', 'bar');
+      db.users.add('user');
+    `,
+      { exclude: ['db'] }
+    );
+
+    expect(result).toBe(f(`jest.mock('cache', () => ({set: jest.fn()}));`));
+  });
+
+  it('handles include option', () => {
+    const result = generate(
+      `
+      const db = require('db');
+      const cache = require('cache');
+      cache.set('foo', 'bar');
+      db.users.add('user');
+    `,
+      { include: ['cache'] }
+    );
+
+    expect(result).toBe(f(`jest.mock('cache', () => ({set: jest.fn()}));`));
+  });
+
+  it('handles include and exclude options', () => {
+    const result = generate(
+      `
+      const db = require('db');
+      const cache = require('cache');
+      const log = require('log');
+      cache.set('foo', 'bar');
+      db.users.add('user');
+      log.add('log');
+    `,
+      { include: ['cache'], exclude: ['log'] }
+    );
+
+    expect(result).toBe(f(`jest.mock('cache', () => ({set: jest.fn()}));`));
+  });
 });
