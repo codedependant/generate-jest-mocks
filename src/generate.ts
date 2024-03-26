@@ -168,6 +168,7 @@ function main(
       const modulePath = variableDeclaratorPath.node.init?.arguments[0].value;
 
       if (exclude.includes(modulePath)) return;
+      console.log('file: generate.ts : line 170', include, modulePath);
       if (include.length && !include.includes(modulePath)) return;
 
       let properties;
