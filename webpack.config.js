@@ -9,7 +9,7 @@ module.exports = {
         test: /\.ts?$/,
         use: 'ts-loader',
         // exclude unit test files
-        exclude: [/node_modules/, /.*\.test\.ts/],
+        exclude: [/node_modules/, /.*\.test\.{js,ts}/],
       },
     ],
   },

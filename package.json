@@ -2,9 +2,10 @@
   "name": "generate-jest-mocks",
   "version": "0.1.0",
   "description": "Generates jest mocks based on module usage",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "webpack --mode=production --config webpack.config.js"
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,8 @@
     "@babel/preset-typescript": "^7.24.1",
     "@babel/traverse": "7.24.0",
     "@babel/types": "^7.24.0",
+    "@types/lodash.merge": "^4.6.9",
+    "@types/lodash.set": "^4.3.9",
     "babel-jest": "^29.7.0",
     "esbuild-register": "^3.5.0",
     "jest": "29.7.0",

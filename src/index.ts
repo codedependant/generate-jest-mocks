@@ -17,14 +17,13 @@ function main() {
     })
     .parseSync();
 
-  console.log('main : argv:', argv._[0]);
   const file = argv._[0] ? readFileSync(argv._[0], 'utf-8') : undefined;
 
   const output = generate(file, {
     exclude: [argv.e].filter(Boolean).flat() as string[],
     include: [argv.i].filter(Boolean).flat() as string[],
   });
-  console.log('main : output:', output);
+  console.log(output);
 }
 
 main();
