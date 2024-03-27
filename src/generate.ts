@@ -113,7 +113,10 @@ function main(
     include = [],
   }: { exclude?: string[]; include?: string[] } = {}
 ) {
-  if (!file) throw new Error('file is required');
+  if (!file)
+    throw new Error(
+      'Provide the path to the input file eg) generate-jest-mocks path/to/file.js'
+    );
 
   const ast = safeParse(file);
 
