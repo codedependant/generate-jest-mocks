@@ -7,6 +7,9 @@
     "test": "jest",
     "build": "webpack --mode=production --config webpack.config.js"
   },
+  "bin": {
+    "generate-jest-mocks": "./dist/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/codedependant/generate-jest-mocks.git"
