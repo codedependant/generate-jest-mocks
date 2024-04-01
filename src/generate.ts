@@ -111,7 +111,8 @@ function main(
   {
     exclude = [],
     include = [],
-  }: { exclude?: string[]; include?: string[] } = {}
+    automock = false,
+  }: { exclude?: string[]; include?: string[]; automock?: boolean } = {}
 ) {
   if (!file)
     throw new Error(
@@ -144,13 +145,17 @@ function main(
         })
         .filter(Boolean) as Property[];
 
-      references.push(
-        ...getReferences({
-          properties,
-          path,
-          modulePath,
-        })
-      );
+      if (automock) {
+        references.push({ [modulePath]: null });
+      } else {
+        references.push(
+          ...getReferences({
+            properties,
+            path,
+            modulePath,
+          })
+        );
+      }
     },
     Identifier(path) {
       if (path.node.name !== 'require') return;
@@ -197,13 +202,17 @@ function main(
           { isRoot: true, name: variableDeclaratorPath.node.id.name },
         ];
 
-      references.push(
-        ...getReferences({
-          properties,
-          path,
-          modulePath,
-        })
-      );
+      if (automock) {
+        references.push({ [modulePath]: null });
+      } else {
+        references.push(
+          ...getReferences({
+            properties,
+            path,
+            modulePath,
+          })
+        );
+      }
     },
   });
   const modules = references.reduce((acc, reference) => {
@@ -212,6 +221,7 @@ function main(
 
   const output = Object.entries(modules)
     .map(([key, value]) => {
+      if (automock) return `jest.mock('${key}');`;
       return `jest.mock('${key}', () => (${buildMock(value)}));`;
     })
     .join('\n');

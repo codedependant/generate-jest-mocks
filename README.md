@@ -1,10 +1,10 @@
 # generate-jest-mocks
 
-Generates Jest mocks for imported modules based on their usage in a provided Javascript/Typescript file. Useful when automocks are slow.
+Automatically generate Jest mocks for your Javascript/Typescript files based on module usage.
 
 ## Example
 
-Consider the following code snippet:
+Consider the following file:
 
 ```js
 const api = require('api');
@@ -18,7 +18,7 @@ function main(user) {
 }
 ```
 
-Running `generate-jest-mocks` on this code will result in the following Jest mocks being generated:
+Running `generate-jest-mocks` on it will result in the following manual Jest mocks being generated:
 
 ```js
 jest.mock('api', () => ({
@@ -27,8 +27,16 @@ jest.mock('api', () => ({
   }
 });
 jest.mock('track', () => jest.fn());
-jest.mock('cache', () => ({flush: jest.fn()}));
+jest.mock('cache', () => ({ flush: jest.fn() }));
 
+```
+
+Or alternatively, when using `--automock`, Jest automocks can be generated:
+
+```js
+jest.mock('api');
+jest.mock('track');
+jest.mock('cache');
 ```
 
 ## Install
@@ -62,3 +70,38 @@ To exclude one or more modules from being mocked use `--exclude=module` or `-e=m
 ```
 generate-jest-mocks --exclude=api -e=cache path/to/input.js
 ```
+
+### Output Automocks
+
+By default `generate-jest-mocks` will output manual mocks. To generate automocks use `--automock` or `-a`. For example with the following code:
+
+```js
+const api = require('api');
+const track = require('track');
+const { flush } = require('cache');
+
+function main(user) {
+  const userID = api.users.create(user);
+  track('create_user', userID);
+  flush(userID);
+}
+```
+
+the output when using `--automock` will be:
+
+```js
+jest.mock('api');
+jest.mock('track');
+jest.mock('cache');
+```
+
+## How to Contribute
+
+1. Fork the repository
+2. Create a new branch for your feature or bug fix
+3. Write your code
+4. Write tests that cover your code as much as possible
+5. Run all tests and ensure they pass
+6. Submit a pull request
+
+Please try to keep your pull request small and focused. This will make it much easier to review and accept.

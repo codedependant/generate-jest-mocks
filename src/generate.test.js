@@ -194,4 +194,28 @@ describe('generate', () => {
 
     expect(result).toBe(f(`jest.mock('cache', () => ({set: jest.fn()}));`));
   });
+
+  it('handles automock option', () => {
+    const result = generate(
+      `
+      const cache = require('cache');
+      cache.set('foo', 'bar');
+    `,
+      { automock: true }
+    );
+
+    expect(result).toBe(f(`jest.mock('cache')`));
+  });
+
+  it('handles automock option with es6', () => {
+    const result = generate(
+      `
+      import cache from 'cache';
+      cache.set('foo', 'bar');
+    `,
+      { automock: true }
+    );
+
+    expect(result).toBe(f(`jest.mock('cache')`));
+  });
 });

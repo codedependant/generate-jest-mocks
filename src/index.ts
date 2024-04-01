@@ -18,6 +18,11 @@ function main() {
         type: 'string',
         description: 'List of modules to include',
       })
+      .option('automock', {
+        alias: 'a',
+        type: 'boolean',
+        description: 'Output jest automocks instead of manual mocks',
+      })
       .parseSync();
 
     const file = argv._[0] ? readFileSync(argv._[0], 'utf-8') : undefined;
@@ -25,6 +30,7 @@ function main() {
     const output = generate(file, {
       exclude: [argv.e].filter(Boolean).flat() as string[],
       include: [argv.i].filter(Boolean).flat() as string[],
+      automock: argv.a as boolean,
     });
     console.log(output);
   } catch (error) {
