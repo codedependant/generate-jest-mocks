@@ -1,11 +1,11 @@
 {
   "name": "generate-jest-mocks",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Generates jest mocks based on module usage",
   "main": "dist/index.js",
   "scripts": {
     "test": "jest",
-    "build": "webpack --mode=production --config webpack.config.js && chmod +x dist/index.js"
+    "publish": "webpack --mode=production --config webpack.config.js && chmod +x dist/index.js && npm publish"
   },
   "bin": {
     "generate-jest-mocks": "./dist/index.js"
