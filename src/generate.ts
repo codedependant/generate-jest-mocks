@@ -107,19 +107,19 @@ function getSpecifierName(
 }
 
 function main(
-  file,
+  fileContents,
   {
     exclude = [],
     include = [],
     automock = false,
   }: { exclude?: string[]; include?: string[]; automock?: boolean } = {}
 ) {
-  if (!file)
+  if (!fileContents)
     throw new Error(
-      'Provide the path to the input file eg) generate-jest-mocks path/to/file.js'
+      'Provide the code of the file you want to generate mocks for.'
     );
 
-  const ast = safeParse(file);
+  const ast = safeParse(fileContents);
 
   const references = [];
 

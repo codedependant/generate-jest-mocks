@@ -39,6 +39,27 @@ jest.mock('track');
 jest.mock('cache');
 ```
 
+It also handles ES6 and Typescript files:
+
+```ts
+import cache, {set} from 'cache';
+
+set('foo', 'bar');
+cache.flush();
+}
+```
+
+will output:
+
+```js
+jest.mock('cache', () => ({
+  default: {
+    flush: jest.fn(),
+  },
+  set: jest.fn(),
+}));
+```
+
 ## Install
 
 Install it using npm:
@@ -54,6 +75,10 @@ generate-jest-mocks path/to/input.js
 ```
 
 ## Options
+
+### Generate Automocks
+
+By default `generate-jest-mocks` will output manual mocks. To generate automocks use `--automock` or `-a`.
 
 ## Include modules
 
@@ -71,28 +96,24 @@ To exclude one or more modules from being mocked use `--exclude=module` or `-e=m
 generate-jest-mocks --exclude=api -e=cache path/to/input.js
 ```
 
-### Output Automocks
+## Programming API
 
-By default `generate-jest-mocks` will output manual mocks. To generate automocks use `--automock` or `-a`. For example with the following code:
+Import and call the default function:
 
 ```js
-const api = require('api');
-const track = require('track');
-const { flush } = require('cache');
+const generate = require('generate-jest-mocks').default;
 
-function main(user) {
-  const userID = api.users.create(user);
-  track('create_user', userID);
-  flush(userID);
-}
+const output = generate(fs.readFileSync('path/to/file.js'), {
+  automock: false,
+  exclude: ['exclude/module'],
+  include: ['include/module'],
+});
 ```
 
-the output when using `--automock` will be:
+or with ES6 simply:
 
-```js
-jest.mock('api');
-jest.mock('track');
-jest.mock('cache');
+```ts
+import generate from 'generate-jest-mocks';
 ```
 
 ## How to Contribute

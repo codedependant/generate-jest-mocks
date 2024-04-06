@@ -1,9 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 
-module.exports = {
-  entry: './src/index.ts',
-  target: 'node',
+const common = {
   module: {
     rules: [
       {
@@ -14,17 +12,35 @@ module.exports = {
       },
     ],
   },
-  plugins: [
-    new webpack.BannerPlugin({
-      banner: '#!/usr/bin/env node',
-      raw: true,
-    }),
-  ],
   resolve: {
     extensions: ['.ts', '.js'],
   },
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'index.js',
-  },
 };
+
+module.exports = [
+  {
+    entry: './src/index.ts',
+    target: 'node',
+    ...common,
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: 'index.js',
+      library: { name: 'generateJestMocks', type: 'umd' },
+    },
+  },
+  {
+    entry: './src/bin/index.ts',
+    target: 'node',
+    ...common,
+    plugins: [
+      new webpack.BannerPlugin({
+        banner: '#!/usr/bin/env node',
+        raw: true,
+      }),
+    ],
+    output: {
+      path: path.resolve(__dirname, 'dist/bin'),
+      filename: 'index.js',
+    },
+  },
+];

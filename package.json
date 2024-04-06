@@ -1,15 +1,16 @@
 {
   "name": "generate-jest-mocks",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Generates jest mocks based on module usage",
-  "main": "dist/index.js",
   "scripts": {
     "test": "jest",
-    "publish": "webpack --mode=production --config webpack.config.js && chmod +x dist/index.js && npm publish"
+    "build": "rm -rf dist && webpack --mode=production --config webpack.config.js && chmod +x dist/bin/index.js",
+    "publish": "npm run build && npm publish"
   },
   "bin": {
-    "generate-jest-mocks": "./dist/index.js"
+    "generate-jest-mocks": "./dist/bin/index.js"
   },
+  "module": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/codedependant/generate-jest-mocks.git"
